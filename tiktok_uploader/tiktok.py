@@ -16,7 +16,7 @@ load_dotenv()
 _UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'
 
 
-def login(login_name: str):
+def login(login_name: str, proxy: str = None):
 	# Check if login name is already save in file.
 	cookies = load_cookies_from_file(f"tiktok_session-{login_name}")
 	session_cookie = next((c for c in cookies if c["name"] == 'sessionid'), None)
@@ -26,23 +26,38 @@ def login(login_name: str):
 		print("Unnecessary login: session already saved!")
 		return session_cookie["value"]
 
-	browser = Browser.get()
-	response = browser.driver.get(os.getenv("TIKTOK_LOGIN_URL"))
+	try:
+		browser = Browser.get()
+		
+		# Set proxy if provided
+		if proxy:
+			browser.set_proxy(proxy)
+			
+		response = browser.driver.get(os.getenv("TIKTOK_LOGIN_URL"))
 
-	session_cookies = []
-	while not session_cookies:
-		for cookie in browser.driver.get_cookies():
-			if cookie["name"] in ["sessionid", "tt-target-idc"]:
-				if cookie["name"] == "sessionid":
-					cookie_name = cookie
-				session_cookies.append(cookie)
+		session_cookies = []
+		while not session_cookies:
+			for cookie in browser.driver.get_cookies():
+				if cookie["name"] in ["sessionid", "tt-target-idc"]:
+					if cookie["name"] == "sessionid":
+						cookie_name = cookie
+					session_cookies.append(cookie)
 
-	# print("Session cookie found: ", session_cookie["value"])
-	print("Account successfully saved.")
-	browser.save_cookies(f"tiktok_session-{login_name}", session_cookies)
-	browser.driver.quit()
-
-	return cookie_name.get('value', '') if cookie_name else ''
+		print("Account successfully saved.")
+		browser.save_cookies(f"tiktok_session-{login_name}", session_cookies)
+		
+		# Save proxy info if provided
+		save_proxy_info(login_name, proxy)
+		
+		return cookie_name.get('value', '') if cookie_name else ''
+		
+	finally:
+		# Ensure browser is properly closed even if an error occurs
+		if 'browser' in locals() and browser and browser.driver:
+			try:
+				browser.driver.quit()
+			except Exception as e:
+				print(f"Warning: Error while closing browser: {str(e)}")
 
 
 # Local Code...
@@ -269,7 +284,7 @@ def upload_video(session_user, video, title, schedule_time=0, allow_comment=1, a
 		if r.json()["status_code"] == 0:
 			print(f"Published successfully {'| Scheduled for ' + str(schedule_time) if schedule_time else ''}")
 			uploaded = True
-			break
+			return True
 		else:
 			print("[-] Publish failed to Tiktok, trying again...")
 			printError(url, r)
@@ -362,6 +377,25 @@ def upload_to_tiktok(video_file, session):
 	return video_id, session_key, upload_id, crcs, upload_host, store_uri, video_auth, aws_auth
 
 
+def save_proxy_info(username: str, proxy: str):
+	proxy_file = os.path.join(os.getcwd(), "proxy_info.txt")
+	
+	# Read existing entries
+	existing_data = {}
+	if os.path.exists(proxy_file):
+		with open(proxy_file, 'r') as f:
+			for line in f:
+				if ':' in line:
+					user, prx = line.strip().split(':', 1)
+					existing_data[user] = prx
+	
+	# Update or add new entry
+	existing_data[username] = proxy if proxy else "no_proxy"
+	
+	# Write back all entries
+	with open(proxy_file, 'w') as f:
+		for user, prx in existing_data.items():
+			f.write(f"{user}:{prx}\n")
 
 
 if __name__ == "__main__":

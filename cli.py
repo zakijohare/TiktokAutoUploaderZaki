@@ -3,6 +3,7 @@ from tiktok_uploader import tiktok, Video
 from tiktok_uploader.basics import eprint
 from tiktok_uploader.Config import Config
 import sys, os
+import random
 
 if __name__ == "__main__":
     _ = Config.load("./config.txt")
@@ -13,6 +14,7 @@ if __name__ == "__main__":
     # Login subcommand.
     login_parser = subparsers.add_parser("login", help="Login into TikTok to extract the session id (stored locally)")
     login_parser.add_argument("-n", "--name", help="Name to save cookie as", required=True)
+    login_parser.add_argument("-p", "--proxy", default="", help="Proxy to use for login (e.g., http://user:pass@host:port)")
 
     # Upload subcommand.
     upload_parser = subparsers.add_parser("upload", help="Upload video on TikTok")
@@ -30,6 +32,20 @@ if __name__ == "__main__":
     upload_parser.add_argument("-ai", "--ailabel", type=int, default=0)
     upload_parser.add_argument("-p", "--proxy", default="")
 
+    # Random upload subcommand.
+    rupload_parser = subparsers.add_parser("rupload", help="Upload a random video from VideosDirPath")
+    rupload_parser.add_argument("-u", "--users", help="Enter cookie name from login", required=True)
+    rupload_parser.add_argument("-t", "--title", help="Title of the video", required=True)
+    rupload_parser.add_argument("-sc", "--schedule", type=int, default=0, help="Schedule time in minutes")
+    rupload_parser.add_argument("-ct", "--comment", type=int, default=1, choices=[0, 1])
+    rupload_parser.add_argument("-d", "--duet", type=int, default=0, choices=[0, 1])
+    rupload_parser.add_argument("-st", "--stitch", type=int, default=0, choices=[0, 1])
+    rupload_parser.add_argument("-vi", "--visibility", type=int, default=0, help="Visibility type: 0 for public, 1 for private")
+    rupload_parser.add_argument("-bo", "--brandorganic", type=int, default=0)
+    rupload_parser.add_argument("-bc", "--brandcontent", type=int, default=0)
+    rupload_parser.add_argument("-ai", "--ailabel", type=int, default=0)
+    rupload_parser.add_argument("-p", "--proxy", default="")
+
     # Show cookies
     show_parser = subparsers.add_parser("show", help="Show users and videos available for system.")
     show_parser.add_argument("-u", "--users", action='store_true', help="Shows all available cookie names")
@@ -43,8 +59,8 @@ if __name__ == "__main__":
             parser.error("The 'name' argument is required for the 'login' subcommand.")
         # Name of file to save the session id.
         login_name = args.name
-        # Name of file to save the session id.
-        tiktok.login(login_name)
+        # Pass proxy to login function
+        tiktok.login(login_name, args.proxy)
 
     elif args.subcommand == "upload":
         # Obtain session id from the cookie name.
@@ -74,6 +90,42 @@ if __name__ == "__main__":
                 sys.exit(1)
 
         tiktok.upload_video(args.users, args.video,  args.title, args.schedule, args.comment, args.duet, args.stitch, args.visibility, args.brandorganic, args.brandcontent, args.ailabel, args.proxy)
+
+    elif args.subcommand == "rupload":
+        video_dir = os.path.join(os.getcwd(), Config.get().videos_dir)
+        video_files = [f for f in os.listdir(video_dir) if f.endswith(('.mp4', '.mov', '.avi'))]
+        
+        if not video_files:
+            print("[-] No videos found in VideosDirPath")
+            sys.exit(1)
+        
+        random_video = random.choice(video_files)
+        print(f"Selected random video: {random_video}")
+        
+        success = tiktok.upload_video(
+            args.users,
+            random_video,
+            args.title,
+            args.schedule,
+            args.comment,
+            args.duet,
+            args.stitch,
+            args.visibility,
+            args.brandorganic,
+            args.brandcontent,
+            args.ailabel,
+            args.proxy
+        )
+        
+        if success:
+            try:
+                video_path = os.path.join(video_dir, random_video)
+                os.remove(video_path)
+                print(f"[+] Video file successfully deleted: {random_video}")
+            except Exception as e:
+                print(f"[-] Error deleting video file: {str(e)}")
+        else:
+            print("[-] Upload failed, video file not deleted")
 
     elif args.subcommand == "show":
         # if flag is c then show cookie names

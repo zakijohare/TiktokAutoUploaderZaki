@@ -1,0 +1,78 @@
+TikTok Auto Uploader CLI Commands
+================================
+
+1. Login Command
+---------------
+Command: python cli.py login
+Description: Login to TikTok and save session cookies locally
+Arguments:
+  -n, --name    Name to save cookie as (required)
+  -p, --proxy   Proxy to use for login (optional, format: http://user:pass@host:port)
+
+Example:
+python cli.py login -n my_account
+python cli.py login -n my_account -p http://proxy.example.com:8080
+
+
+2. Upload Command
+----------------
+Command: python cli.py upload
+Description: Upload a video to TikTok
+Arguments:
+  -u, --users         Enter cookie name from login (required)
+  -v, --video         Path to video file
+  -yt, --youtube      Enter Youtube URL
+  -t, --title         Title of the video (required)
+  -sc, --schedule     Schedule time in seconds (default: 0)
+  -ct, --comment      Allow comments (0=off, 1=on, default: 1)
+  -d, --duet          Allow duets (0=off, 1=on, default: 0)
+  -st, --stitch       Allow stitch (0=off, 1=on, default: 0)
+  -vi, --visibility   Visibility type (0=public, 1=private, default: 0)
+  -bo, --brandorganic Brand organic type (default: 0)
+  -bc, --brandcontent Brand content type (default: 0)
+  -ai, --ailabel      AI label type (default: 0)
+  -p, --proxy         Proxy to use (optional)
+
+Example:
+python cli.py upload --user my_account -v "video.mp4" -t "My Video Title"
+python cli.py upload --user my_account -yt "https://youtube.com/shorts/xxx" -t "My Video"
+
+
+3. Random Upload Command
+-----------------------
+Command: python cli.py rupload
+Description: Upload a random video from VideosDirPath and delete it after successful upload
+Arguments:
+  -u, --users         Enter cookie name from login (required)
+  -t, --title         Title of the video (required)
+  -sc, --schedule     Schedule time in minutes (default: 0)
+  -ct, --comment      Allow comments (0=off, 1=on, default: 1)
+  -d, --duet          Allow duets (0=off, 1=on, default: 0)
+  -st, --stitch       Allow stitch (0=off, 1=on, default: 0)
+  -vi, --visibility   Visibility type (0=public, 1=private, default: 0)
+  -bo, --brandorganic Brand organic type (default: 0)
+  -bc, --brandcontent Brand content type (default: 0)
+  -ai, --ailabel      AI label type (default: 0)
+  -p, --proxy         Proxy to use (optional)
+
+Example:
+python cli.py rupload --user my_account -t "Random Video Title"
+
+
+4. Show Command
+--------------
+Command: python cli.py show
+Description: Show available users and videos in the system
+Arguments:
+  -u, --users    Shows all available cookie names
+  -v, --videos   Shows all available videos
+
+Example:
+python cli.py show -u
+python cli.py show -v
+
+
+Notes:
+- All videos must be placed in the VideosDirPath directory
+- All cookies are stored in the CookiesDir directory
+- Proxy format: http://username:password@host:port or http://host:port 
